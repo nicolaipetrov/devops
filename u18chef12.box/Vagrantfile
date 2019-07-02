@@ -1,0 +1,69 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  if Vagrant.has_plugin?("vagrant-cachier")
+      config.cache.scope = :box
+  end
+  config.vm.box = "bento/ubuntu-18.04"
+
+config.vm.provision :shell, inline: <<-SHELL
+
+     # Update & Upgrade
+     sudo apt  install -y build-essential > /dev/null 2>&1
+     sudo apt update  > /dev/null 2>&1
+     sudo apt -y upgrade  > /dev/null 2>&1
+
+ SHELL
+
+# trigger reload
+config.vm.provision :reload
+
+
+config.vm.provision :shell, inline: <<-SHELL
+
+     # Update & Upgrade
+     sudo apt update  > /dev/null 2>&1 
+     sudo apt -y upgrade > /dev/null 2>&1
+
+     # download Chef
+     wget -q https://packages.chef.io/files/stable/chef/12.18.31/ubuntu/16.04/chef_12.18.31-1_amd64.deb
+     
+     # install Chef
+     sudo dpkg -i chef*.deb
+
+     # clean 
+     rm chef*.deb
+     
+     # Install berks
+     #sudo apt  install -y build-essential
+     sudo /opt/chef/embedded/bin/gem install --no-rdoc --no-ri berkshelf -v6.3.4
+    
+  SHELL
+
+# trigger reload
+config.vm.provision :reload
+
+# execute code after reload
+config.vm.provision :shell, inline: <<-SHELL
+
+     # Update & Upgrade
+     sudo apt update  > /dev/null 2>&1
+     sudo apt -y upgrade  > /dev/null 2>&1
+
+     sudo apt install -y linux-headers-$(uname -r)  > /dev/null 2>&1
+     sudo apt -y autoremove  > /dev/null 2>&1
+
+     chef-client -v
+     echo " berks -v " `/opt/chef/embedded/bin/berks -v`
+     echo " ruby -v " `/opt/chef/embedded/bin/ruby -v`
+     sudo apt-get clean  
+
+  SHELL
+
+# trigger reload
+config.vm.provision :reload
+
+end
